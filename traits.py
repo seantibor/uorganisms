@@ -29,7 +29,7 @@ class Trait(ABC):
         return '{}: {}'.format(self.trait, self.traits[self.trait])
 
     def set_random_trait(self):
-        self.trait = choice(list(self.traits))
+        self.trait = choice(list(self.traits.keys()))
 
 class Gender(Trait):
     """ A Trait subclass for genders. Only XX and XY are valid gender genotypes. """

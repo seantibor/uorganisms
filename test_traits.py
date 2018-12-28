@@ -1,10 +1,9 @@
 from organisms import Organism
-from random import shuffle, normalvariate
+from random import normalvariate
 import pandas as pd
 import matplotlib.pyplot as plt
 
 def main():
-    
     test_organisms = [Organism('Bob{}'.format(i), None, None) for i in range(1000)]
     female_organisms = [org for org in test_organisms if org.traits['gender'].trait == 'XX']
     male_organisms = [org for org in test_organisms if org not in female_organisms]

@@ -32,7 +32,7 @@ class Trait(ABC):
         self.trait = choice(list(self.traits))
 
 class Gender(Trait):
-
+    """ A Trait subclass for genders. Only XX and XY are valid gender genotypes. """
 
     def __init__(self, parent1_gender=None, parent2_gender=None):
         self.traits = {'XX': 'Female', 'XY': 'Male'}
@@ -41,7 +41,7 @@ class Gender(Trait):
 
 
 class Color(Trait):
-
+    """ A Trait subclass for colors. Color is either Blue or Yellow, with a capital B dominant gene"""
 
     def __init__(self, parent1_color=None, parent2_color=None):
         self.traits = {'BB': 'Blue', 'Bb': 'Blue', 'bb': 'Yellow', 'bB': 'Blue'}

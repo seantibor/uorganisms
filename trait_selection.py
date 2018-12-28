@@ -1,3 +1,9 @@
+import pip
+from fuzzywuzzy import fuzz 
+from fuzzywuzzy import process 
+from random import choice
+from collections import Counter
+
 from random import choice
 from collections import Counter
 

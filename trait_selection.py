@@ -10,6 +10,8 @@ def select_trait(parent1, parent2):
     parent parameters: strings of 2 character genes from first parent"""
     return choice([x + y for x in parent1 for y in parent2])
 
+#in return choice are you only selecting the x from parent 1 and the y from parent2? or are they a random selection from each trait_perm?
+
 
 def main():
     parent1 = choice(trait_perms)

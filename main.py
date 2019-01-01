@@ -1,7 +1,7 @@
-from microbit import display, button_a
+from microbit import display, button_a, button_b
 from os import listdir
-from random import choice, randint
-import time
+from random import choice
+from time import ticks_ms, ticks_add
 import radio
 
 genders = {'XX': 'Female', 'XY': 'Male'}
@@ -12,84 +12,12 @@ org = ''
 state = 'RECV'
 
 
-def start():
-    print('loading...')
-    global org
-
-    try:
-        org = load_organism(FILE)
-        if org is None:
-            print('could not load org from file')
-        print('Organism {} loaded with {} gender and {} color.'.format(
-            org.name, org.gender, org.color))
-        display.scroll('Loaded', wait=False)
-    except AttributeError:
-        display.scroll('NF')
-        print('Organism not found. Creating new organism and writing it to file')
-        org = Organism('bob', None, None)
-        write_string(repr(org), FILE)
-        display.scroll('Written')
-        print('Organism {} written with {} gender and {} color.'.format(org.name, org.gender, org.color))
-        print(repr(org))
-
-    radio.on()
-
-
-def loop():
-    global org, state
-
-    if button_a.was_pressed():
-        state = 'SEND'
-        msg = 'SREQ|' + repr(org)
-        print(msg)
-        radio.send(msg)
-
-    if state == 'RECV':
-        msg = radio.receive()
-        if msg is not None:
-            print(msg)
-            new_org = Organism('received_parent', None, None)
-            new_org.update_from_repr(eval(msg[5:]))
-            if new_org.gender != org.gender:
-                print('attempting reproduction')
-                radio.send('SRSP|' + repr(org))
-                org = Organism('offspring', new_org, org)
-    elif state == 'SEND':
-        deadline = time.ticks_add(time.ticks_ms(), 500)
-        while time.ticks_ms() < deadline:
-            msg = radio.receive()
-            if msg is not None and msg[:4] == 'SRSP':
-                print(msg)
-                new_org = Organism('new bob', None, None)
-                new_org.update_from_repr(eval(msg[5:]))
-                org = Organism('new bob', org, new_org)
-                radio.send('SACK|' + str(org.hash))
-                state = 'RECV'
-                break
-        if state == 'SEND':
-            print('message send timeout. No org received')
-            state = 'RECV'
-
-
-def hash_string(s):
-    """
-    Hash a string using the djb2 algorithm found at 
-    https://gist.github.com/mengzhuo/180cd6be8ba9e2743753
-    :param s:
-    :return hash value:
-    """
-    hash = 5381
-    for x in s:
-        hash = ((hash << 5) + hash) + ord(x)
-    return hash & 0xFFFFFFFF
-
-
 def combine_traits(trait1, trait2, sort=True):
     """
     Joins two parent traits at random. 
     A trait is defined as a 2-character string
     """
-    trait = [trait1[randint(0, 1)], trait2[randint(0, 1)]]
+    trait = [choice(trait1), choice(trait2)]
     if sort:
         return ''.join(sorted(trait))
     else:
@@ -101,47 +29,53 @@ class Organism(object):
     Represents a micro:bit organism with specific traits.
     """
 
-    def __init__(self, name, parent1, parent2):
-        self.name = name
-
+    def __init__(self, parent1=None, parent2=None, gender=None,
+                 color=None, parent1_hash=None, parent2_hash=None,
+                 creation_time=None):
         # case for first generation
         if parent1 is None or parent2 is None:
-            self.parent1 = None
-            self.parent2 = None
-            self.gender = choice(('XX', 'XY'))
-            self.color = choice(('BB', 'Bb', 'bB', 'bb'))
-            self.hash = hash_string(self.name + self.gender + self.color)
+            self.parent1 = None if parent1_hash is None else parent1_hash
+            self.parent2 = None if parent2_hash is None else parent2_hash
+            self.gender = choice(('XX', 'XY')) if gender is None else gender
+            self.color = choice(('BB', 'Bb', 'bB', 'bb')) if color is None else color
         else:  # for generation 2+
-            self.parent1 = parent1.hash
-            self.parent2 = parent2.hash
+            self.parent1 = hash(parent1)
+            self.parent2 = hash(parent2)
             if parent1.gender == parent2.gender:
                 raise Exception('parents must have different genders')
             else:
                 self.gender = combine_traits(parent1.gender, parent2.gender, sort=True)
             self.color = combine_traits(parent1.color,
                                         parent2.color, sort=False)
-            self.hash = hash_string(self.name + self.parent1 + self.parent2 + self.gender + self.color)
 
         self.female = self.gender == 'XY'
+        self.creation_time = ticks_ms() if creation_time is None else creation_time
 
     def __repr__(self):
-        return str({'name': self.name, 'hash': self.hash,
-                    'parent1': self.parent1, 'parent2': self.parent2,
-                    'gender': self.gender, 'color': self.color})
+        return ','.join([str(self.__hash__()), self.gender, self.color, str(self.parent1), str(self.parent2),
+                         str(self.creation_time)])
 
-    def update_from_repr(self, repr_string):
-        org_dict = eval(repr_string)
-        print('org_dict loaded')
-        self.name = org_dict['name']
-        self.parent1 = org_dict['parent1']
-        self.parent2 = org_dict['parent2']
-        self.color = org_dict['color']
-        self.gender = org_dict['gender']
+    def __hash__(self):
+        if self.parent1 is None or self.parent2 is None:
+            return hash(str(self.creation_time) + self.gender + self.color)
+        else:
+            return hash(str(self.creation_time) + self.gender + self.color + str(self.parent1) + str(self.parent2))
+
+    @classmethod
+    def org_from_repr(cls, repr_string):
+        repr_list = repr_string.split(',')
+        parent1 = None if repr_list[3] == 'None' else int(repr_list[3])
+        parent2 = None if repr_list[4] == 'None' else int(repr_list[4])
+        return Organism(gender=repr_list[1],
+                        color=repr_list[2],
+                        parent1_hash=parent1,
+                        parent2_hash=parent2,
+                        creation_time=repr_list[5])
 
 
-def write_string(repr_string, filename):
+def write_string(s, filename):
     with open(filename, 'wt') as f:
-        f.write(repr_string)
+        f.write(s)
 
 
 def load_organism(filename):
@@ -149,13 +83,70 @@ def load_organism(filename):
         print('File not found')
         return None
     with open(filename, 'rt') as f:
-        repr_string = f.read()
-        loaded_org = Organism('_', None, None)
-        loaded_org.update_from_repr(repr_string)
-        return loaded_org
+        loaded_org = Organism.org_from_repr(f.read())
+    return loaded_org
 
 
-if __name__ == '__main__':
-    start()
-    while True:
-        loop()
+"""
+Start of main program code
+"""
+
+print('loading...')
+
+try:
+    org = load_organism(FILE)
+    if org is None:
+        print('could not load org from file')
+    print('Organism {} loaded with {} gender and {} color.'.format(hash(org), org.gender, org.color))
+    display.scroll('Loaded', wait=False)
+except AttributeError:
+    display.scroll('NF')
+    print('Organism not found. Creating new organism and writing it to file')
+    org = Organism()
+    write_string(repr(org), FILE)
+    display.scroll('Written', wait=False)
+    print('Organism {} written with {} gender and {} color.'.format(hash(org), org.gender, org.color))
+    print(repr(org))
+
+radio.on()
+radio.config(length=100)
+
+while True:
+    display.show(state[0], delay=100, wait=False)
+    if button_a.was_pressed():
+        state = 'SEND'
+        msg = 'SREQ|' + repr(org)
+        print(msg)
+        radio.send(msg)
+
+    if button_b.was_pressed():
+        org = Organism()
+        print(repr(org))
+
+    if state == 'RECV':
+        msg = radio.receive()
+        if msg is not None and msg[:4] == 'SREQ':
+            print(msg)
+            new_org = Organism.org_from_repr(msg[5:])
+            if new_org.gender != org.gender:
+                print('attempting reproduction')
+                radio.send('SRSP|' + repr(org))
+                org = Organism(parent1=new_org, parent2=org)
+                print('New organism {} created. {}'.format(hash(org), repr(org)))
+            else:
+                print('ignoring same-gender reproduction request')
+    elif state == 'SEND':
+        deadline = ticks_add(ticks_ms(), 500)
+        while ticks_ms() < deadline:
+            msg = radio.receive()
+            display.show('S')
+            if msg is not None and msg[:4] == 'SRSP':
+                print(msg)
+                new_org = Organism.org_from_repr(msg[5:])
+                org = Organism(parent1=org, parent2=new_org)
+                radio.send('SACK|' + str(hash(org)))
+                state = 'RECV'
+                break
+        if state == 'SEND':
+            print('message send timeout. No org received')
+            state = 'RECV'

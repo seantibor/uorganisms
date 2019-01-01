@@ -1,8 +1,10 @@
 from random import choice, randint
-from abc import ABC, abstractmethod
 
 
-class Trait(ABC):
+# from abc import ABC, abstractmethod
+
+
+class Trait(object):
 
     traits = {}
 
@@ -23,13 +25,13 @@ class Trait(ABC):
             return ''.join(trait)
 
     def __repr__(self):
-        return '{}: {}'.format(self.name, self.trait)
+        return str({'name': self.name, 'trait': self.trait, 'trait_value': self.trait_value})
 
     def __str__(self):
         return '{}: {}'.format(self.trait, self.traits[self.trait])
 
     def set_random_trait(self):
-        self.trait = choice(list(self.traits.keys()))
+        pass
 
 class Gender(Trait):
     """ A Trait subclass for genders. Only XX and XY are valid gender genotypes. """
@@ -39,6 +41,10 @@ class Gender(Trait):
         super().__init__(parent1_gender,parent2_gender,name='Gender')
         self.trait = self.trait.upper()
 
+    def set_random_trait(self):
+        self.trait = choice(('XX', 'XY'))
+        self.trait_value = self.traits[self.trait]
+
 
 class Color(Trait):
     """ A Trait subclass for colors. Color is either Blue or Yellow, with a capital B dominant gene"""
@@ -46,3 +52,7 @@ class Color(Trait):
     def __init__(self, parent1_color=None, parent2_color=None):
         self.traits = {'BB': 'Blue', 'Bb': 'Blue', 'bb': 'Yellow', 'bB': 'Blue'}
         super().__init__(parent1_color, parent2_color, name='Color')
+
+    def set_random_trait(self):
+        self.trait = choice(('BB', 'Bb', 'bB', 'bb'))
+        self.trait_value = self.traits[self.trait]

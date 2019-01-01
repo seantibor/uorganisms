@@ -1,11 +1,11 @@
 from organisms import Organism
-from random import normalvariate
+from random import normalvariate, sample
 import pandas as pd
 import matplotlib.pyplot as plt
 
 INITIAL_POP = 1000
 GENERATIONS = 500
-POPULATION_CAP = 5000
+POPULATION_CAP = 2000
 FAMILY_SIZE = 2.1
 FAMILY_STDEV = 0.9
 
@@ -24,10 +24,11 @@ def main():
     """
     # create a list of organisms to test in current generation
     current_generation = [Organism('Bob{}'.format(i), None, None) for i in range(INITIAL_POP)]
+    current_generation = [org for org in current_generation if org.traits['color'].trait_value == "Blue"]
 
     # create gender lists to support reproduction
-    current_females = [org for org in current_generation if org.female]
-    current_males = [org for org in current_generation if not org.female]
+    current_females = set([org for org in current_generation if org.female])
+    current_males = set([org for org in current_generation if not org.female])
 
     # initialize overall_stats dictionary to track current generation statistics
     overall_stats = {'gen': [1], 'total_pop': [len(current_generation)], 'female': [len(current_females)],
@@ -48,9 +49,9 @@ def main():
     for i in range(2, GENERATIONS + 1):
 
         # initialize lists to contain next generation of organisms
-        next_generation = []
-        next_females = []
-        next_males = []
+        next_generation = set()
+        next_females = set()
+        next_males = set()
         # initialize current generation's statistics tracker
         generation_stats = {'gen': i, 'total_pop': 0, "female": 0,
                             'male': 0, 'blue': 0, 'yellow': 0, 'BB': 0, 'Bb': 0, 'bb': 0}
@@ -60,7 +61,7 @@ def main():
             # reproduce if we have females available and haven't reached the population cap
             if len(current_females) > 0 and len(next_generation) < POPULATION_CAP:
                 # get a female Organism for reproduction. candidate is removed from reproduction pool
-                female = current_females.pop()
+                female = sample(current_females, 1)[0]
                 # each pairing results in a family of offspring to maintain or grow population
                 for children in range(round(normalvariate(FAMILY_SIZE, FAMILY_STDEV))):
                     # create a child
@@ -74,11 +75,11 @@ def main():
                         if key == 'color':
                             generation_stats[value.trait] += 1
                     # add child to appropriate lists for next generation
-                    next_generation.append(child)
+                    next_generation.add(child)
                     if child.female:
-                        next_females.append(child)
+                        next_females.add(child)
                     else:
-                        next_males.append(child)
+                        next_males.add(child)
 
         # once all children have been created, advance to the next generation
         current_generation = next_generation
@@ -100,7 +101,7 @@ def main():
     print(df.describe())
     df.plot(y=['total_pop', 'BB', 'Bb', 'bb'])
     plt.show()
-    print(df.iloc[1])
+    print(df.iloc[0])
 
     # plot the color trait percentages by generation
     df['BluePct'] = df['blue'] / df['total_pop']
@@ -109,6 +110,6 @@ def main():
     df.plot(y=['BluePct', 'YellowPct'])
     plt.show()
 
-
+    print(repr(sample(current_generation, 1)[0]))
 if __name__ == '__main__':
     main()

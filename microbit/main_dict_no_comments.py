@@ -10,8 +10,6 @@ last_reproduction = 0
 
 FILE = 'organism.txt'
 
-state = 'LOCK'
-
 
 def combine_traits(trait1, trait2):
     trait = [choice(trait1), choice(trait2)]

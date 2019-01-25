@@ -1,7 +1,7 @@
 from microbit import display, button_a, button_b, Image
 from os import listdir
 from random import choice, randint
-from time import ticks_ms, ticks_add, sleep
+from time import ticks_ms, sleep
 import radio
 import gc
 
@@ -10,7 +10,7 @@ last_reproduction = 0
 
 FILE = 'organism.txt'
 
-state = 'WAIT'
+state = "WAIT"
 
 def combine_traits(trait1, trait2):
     trait = [choice(trait1), choice(trait2)]
@@ -116,25 +116,30 @@ print_org(org)
 radio.on()
 radio.config(length=100)
 while True:
-    display.show(state[0], delay=100, wait=False)
-    gc.collect()
     
+    display.show(state[0], delay=100, wait=False)    
+    msg = radio.receive()
 
+    if msg == 'LOCK':
+        state = msg
+        continue
+    elif state == 'LOCK' and msg == 'UNLOCK':
+        state = 'WAIT'
 
-    if ticks_ms() < ticks_add(last_reproduction, maturity * 1000):
+    if state == 'LOCK':
+        continue
+    
+    if msg == 'RESET':
+        org = create_genesis_org()
+        print_org(org)
+        write_string(org_to_string(org), FILE)
+        
+    gc.collect()
+
+    if ticks_ms() < last_reproduction + maturity * 1000:
         state = 'WAIT'
     elif state == 'WAIT':
         state = 'RECV'
-
-    if button_a.is_pressed() and button_b.is_pressed():
-        org = create_genesis_org()
-        write_string(org_to_string(org), FILE)
-        print_org(org)
-        sleep(1)
-
-    elif button_a.was_pressed():
-        display.scroll('G:{} C:{}'.format(org['gender'], org['color']))
-
 
     elif button_b.was_pressed() and state == 'RECV':
         state = 'SEND'
@@ -142,7 +147,6 @@ while True:
         radio.send(msg)
 
     if state == 'RECV':
-        msg = radio.receive()
         if msg is not None and msg[:4] == 'SREQ':
             new_org = org_from_repr(msg[5:])
             if new_org['gender'] != org['gender']:
@@ -162,7 +166,7 @@ while True:
                 display.show(Image.NO, wait=True, clear=True)
                 print('ignoring same-gender reproduction request')
     elif state == 'SEND':
-        deadline = ticks_add(ticks_ms(), 500)
+        deadline = ticks_ms() + 500
         while ticks_ms() < deadline:
             msg = radio.receive()
             if msg is not None and msg[:4] == 'SRSP':
@@ -181,7 +185,6 @@ while True:
                 last_reproduction = ticks_ms()
                 break
         if state == 'SEND':
-            print('message send timeout. No org received')
             display.show(Image.NO, wait=True, clear=True)
             state = 'RECV'
 

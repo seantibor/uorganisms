@@ -1,16 +1,16 @@
-from microbit import display, button_a, button_b
+from microbit import display, button_a, button_b, Image
 from os import listdir
-from random import choice
+from random import choice, randint
 from time import ticks_ms, ticks_add, sleep
 import radio
 import gc
 
-maturity = 6  # time to reproduce in seconds
+maturity = randint(30, 60)  # time to reproduce in seconds
 last_reproduction = 0
 
 FILE = 'organism.txt'
 
-state = 'RECV'
+state = 'LOCK'
 
 
 def combine_traits(trait1, trait2):
@@ -123,6 +123,8 @@ radio.config(length=100)
 while True:
     display.show(state[0], delay=100, wait=False)
     gc.collect()
+    
+
 
     if ticks_ms() < ticks_add(last_reproduction, maturity * 1000):
         state = 'WAIT'
@@ -159,11 +161,11 @@ while True:
                 print('Offspring:')
                 print_org(org)
                 write_string(org_to_string(org), FILE)
-                display.show('+ ')
+                display.show(Image.YES, wait=True, clear=True)
                 last_reproduction = ticks_ms()
 
             else:
-                display.show('X ')
+                display.show(Image.NO, wait=True, clear=True)
                 print('ignoring same-gender reproduction request')
     elif state == 'SEND':
         deadline = ticks_add(ticks_ms(), 500)
@@ -179,14 +181,14 @@ while True:
                 write_string(org_to_string(org), FILE)
                 print('Offspring:')
                 print_org(org)
-                radio.send('SACK|' + str(get_org_hash(org)))
-                display.show('+ ')
+                radio.send('SACK|' + str(org_to_string(org)))
+                display.show(Image.YES, wait=True, clear=True)
                 state = 'RECV'
                 last_reproduction = ticks_ms()
                 break
         if state == 'SEND':
             print('message send timeout. No org received')
-            display.show('X ')
+            display.show(Image.NO, wait=True, clear=True)
             state = 'RECV'
 
     # print((gc.mem_free(),))

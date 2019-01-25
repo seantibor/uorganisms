@@ -10,6 +10,7 @@ last_reproduction = 0
 
 FILE = 'organism.txt'
 
+state = "WAIT"
 
 def combine_traits(trait1, trait2):
     trait = [choice(trait1), choice(trait2)]
@@ -119,10 +120,25 @@ print_org(org)
 radio.on()
 radio.config(length=100)
 while True:
-    display.show(state[0], delay=100, wait=False)
-    gc.collect()
     
+    display.show(state[0], delay=100, wait=False)    
+    msg = radio.receive()
 
+    if msg == 'LOCK':
+        state = msg
+        continue
+    elif state == 'LOCK' and msg == 'UNLOCK':
+        state = 'WAIT'
+
+    if state == 'LOCK':
+        continue
+    
+    if msg == 'RESET':
+        org = create_genesis_org()
+        print_org(org)
+        write_string(org_to_string(org), FILE)
+        
+    gc.collect()
 
     if ticks_ms() < ticks_add(last_reproduction, maturity * 1000):
         state = 'WAIT'
@@ -145,7 +161,6 @@ while True:
         radio.send(msg)
 
     if state == 'RECV':
-        msg = radio.receive()
         if msg is not None and msg[:4] == 'SREQ':
             new_org = org_from_repr(msg[5:])
             if new_org['gender'] != org['gender']:
@@ -188,5 +203,3 @@ while True:
             print('message send timeout. No org received')
             display.show(Image.NO, wait=True, clear=True)
             state = 'RECV'
-
-    # print((gc.mem_free(),))

@@ -10,6 +10,7 @@ last_reproduction = 0
 
 FILE = 'organism.txt'
 
+state = 'WAIT'
 
 def combine_traits(trait1, trait2):
     trait = [choice(trait1), choice(trait2)]
@@ -63,7 +64,6 @@ def write_string(s, filename):
 
 def load_organism(filename):
     if filename not in listdir():
-        print('File not found')
         return None
     with open(filename, 'rt') as f:
         loaded_org = org_from_repr(f.read())
@@ -107,11 +107,8 @@ def print_org(org):
                              ))
 
 
-print('loading...')
-
 org = load_organism(FILE)
 if org is None:
-    print('could not load org from file')
     org = create_genesis_org()
     write_string(org_to_string(org), FILE)
 print_org(org)
@@ -141,7 +138,7 @@ while True:
 
     elif button_b.was_pressed() and state == 'RECV':
         state = 'SEND'
-        msg = 'SREQ|' + org_to_string(org)
+        msg = 'SREQ|{}'.format(org_to_string(org))
         radio.send(msg)
 
     if state == 'RECV':
@@ -149,12 +146,11 @@ while True:
         if msg is not None and msg[:4] == 'SREQ':
             new_org = org_from_repr(msg[5:])
             if new_org['gender'] != org['gender']:
-                print('attempting reproduction')
                 print('Parent 1:')
                 print_org(org)
                 print('Parent 2:')
                 print_org(new_org)
-                radio.send('SRSP|' + org_to_string(org))
+                radio.send('SRSP|{}'.format(org_to_string(org)))
                 org = create_org_from_parents(new_org, org)
                 print('Offspring:')
                 print_org(org)
@@ -179,7 +175,7 @@ while True:
                 write_string(org_to_string(org), FILE)
                 print('Offspring:')
                 print_org(org)
-                radio.send('SACK|' + str(org_to_string(org)))
+                radio.send('SACK|{}'.format(org_to_string(org)))
                 display.show(Image.YES, wait=True, clear=True)
                 state = 'RECV'
                 last_reproduction = ticks_ms()
@@ -189,4 +185,4 @@ while True:
             display.show(Image.NO, wait=True, clear=True)
             state = 'RECV'
 
-    # print((gc.mem_free(),))
+    print((gc.mem_free(),))

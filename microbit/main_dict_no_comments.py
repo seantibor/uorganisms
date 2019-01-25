@@ -1,7 +1,7 @@
 from microbit import display, button_a, button_b, Image
 from os import listdir
 from random import choice, randint
-from time import ticks_ms, ticks_add, sleep
+from time import ticks_ms, sleep
 import radio
 import gc
 
@@ -64,7 +64,6 @@ def write_string(s, filename):
 
 def load_organism(filename):
     if filename not in listdir():
-        print('File not found')
         return None
     with open(filename, 'rt') as f:
         loaded_org = org_from_repr(f.read())
@@ -112,7 +111,6 @@ print('loading...')
 
 org = load_organism(FILE)
 if org is None:
-    print('could not load org from file')
     org = create_genesis_org()
     write_string(org_to_string(org), FILE)
 print_org(org)
@@ -140,24 +138,14 @@ while True:
         
     gc.collect()
 
-    if ticks_ms() < ticks_add(last_reproduction, maturity * 1000):
+    if ticks_ms() < last_reproduction + maturity * 1000:
         state = 'WAIT'
     elif state == 'WAIT':
         state = 'RECV'
 
-    if button_a.is_pressed() and button_b.is_pressed():
-        org = create_genesis_org()
-        write_string(org_to_string(org), FILE)
-        print_org(org)
-        sleep(1)
-
-    elif button_a.was_pressed():
-        display.scroll('G:{} C:{}'.format(org['gender'], org['color']))
-
-
     elif button_b.was_pressed() and state == 'RECV':
         state = 'SEND'
-        msg = 'SREQ|' + org_to_string(org)
+        msg = 'SREQ|{}'.format(org_to_string(org))
         radio.send(msg)
 
     if state == 'RECV':
@@ -169,7 +157,7 @@ while True:
                 print_org(org)
                 print('Parent 2:')
                 print_org(new_org)
-                radio.send('SRSP|' + org_to_string(org))
+                radio.send('SRSP|{}'.format(org_to_string(org)))
                 org = create_org_from_parents(new_org, org)
                 print('Offspring:')
                 print_org(org)
@@ -181,7 +169,7 @@ while True:
                 display.show(Image.NO, wait=True, clear=True)
                 print('ignoring same-gender reproduction request')
     elif state == 'SEND':
-        deadline = ticks_add(ticks_ms(), 500)
+        deadline = ticks_ms() + 500
         while ticks_ms() < deadline:
             msg = radio.receive()
             if msg is not None and msg[:4] == 'SRSP':
@@ -194,12 +182,13 @@ while True:
                 write_string(org_to_string(org), FILE)
                 print('Offspring:')
                 print_org(org)
-                radio.send('SACK|' + str(org_to_string(org)))
+                radio.send('SACK|{}'.format(org_to_string(org)))
                 display.show(Image.YES, wait=True, clear=True)
                 state = 'RECV'
                 last_reproduction = ticks_ms()
                 break
         if state == 'SEND':
-            print('message send timeout. No org received')
             display.show(Image.NO, wait=True, clear=True)
             state = 'RECV'
+
+    print((gc.mem_free(),))

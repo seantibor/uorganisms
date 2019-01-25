@@ -141,6 +141,15 @@ while True:
     elif state == 'WAIT':
         state = 'RECV'
 
+    if button_a.is_pressed() and button_b.is_pressed():
+        org = create_genesis_org()
+        write_string(org_to_string(org), FILE)
+        print_org(org)
+        sleep(1)
+
+    elif button_a.was_pressed():
+        display.scroll('G:{} C:{}'.format(org['gender'], org['color']))
+
     elif button_b.was_pressed() and state == 'RECV':
         state = 'SEND'
         msg = 'SREQ|{}'.format(org_to_string(org))

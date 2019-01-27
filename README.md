@@ -5,10 +5,10 @@ The uorganism, spoken: 'micro:organism' (get it?), project helps students unders
 
 ## Features:
 * Persistent storage of organisms between resets and power failures
-* Includes lesson worksheet for students to track pedigrees across generations (coming soon)
+* Includes [lesson worksheet](Graphing Pedigree with the Microbit 2019.pdf) for students to track pedigrees across generations
 * Reproduction events between micro:bits using the built-in radio
 * REPL output of reproduction events, including parent information
-* Teacher micro:bit device code that has:
+* [Teacher micro:bit device code](microbit/teacher_mode.py) that has:
   * Logging of all radio messages to the REPL for later analysis
   * Remote lock/unlock functionality to prevent unintended reproduction
   * Remote reset of all micro:bits in range to restart simulation at Generation 0
@@ -39,7 +39,7 @@ These organisms reproduce using the micro:bit radio. A reproduction request cont
 8. All devices that reproduced will then enter a waiting state again until the organism reaches maturity. 
 
 ## Teacher Device
-In addition to the micro:bit organism host devices, a teacher device can be used that provides some additional features for managing the devices, including locking the remote devices to prevent accidental reproduction and logging all radio messages for later analysis.
+In addition to the micro:bit organism host devices, a [teacher device](microbit/teacher_mode.py) can be used that provides some additional features for managing the devices, including locking the remote devices to prevent accidental reproduction and logging all radio messages for later analysis.
 
 * Press the A button on the teacher device to lock/unlock all micro:bits in range. All devices will show L when Locked.
 * Press the B button on the teacher device to reset all micro:bits to generation 0 with random traits
@@ -55,6 +55,7 @@ screen -L /dev/tty.usbmodem14202 115200
 * Jupyter notebook simulation of many generations and thousands of organisms
 
 ## TODO
+* Lesson plan
 * Additional traits
 * Better memory management
 * Radio log analysis script

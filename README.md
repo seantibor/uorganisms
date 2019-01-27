@@ -1,7 +1,6 @@
-# uorganism - micro:bit Genetics in Python
-## A simple genetics simulation for Microbits using Python
+# uorganism - Python micro:organisms on the BBC micro:bit
 
-The uorganism, spoken: 'microorganism' (get it?), project helps students understand how genetic information is passed from generation to generation using the BBC micro:bit. Each micro:bit holds a single virtual organism that can reproduce with other micro:bits in range using the built-in radio. Using the REPL, students can see how new organisms are created and track how genetic information is passed from parents to offspring.
+The uorganism, spoken: 'microorganism' (get it?), project helps students understand how genetic information is passed from generation to generation using the [BBC micro:bit](https://www.microbit.org). Each micro:bit holds a single virtual organism that can reproduce with other micro:bits in range using the built-in radio. Using the REPL, students can see how new organisms are created and track how genetic information is passed from parents to offspring.
 
 ## Features:
 * Persistent storage of organisms between resets and power failures

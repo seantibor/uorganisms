@@ -45,7 +45,7 @@ def create_generation(
             # get a female Organism for reproduction. candidate is removed from reproduction pool
             female = current_females.pop()
             # each pairing results in a family of offspring to maintain or grow population
-            for children in range(round(normalvariate(family_size, family_stdev))):
+            for _ in range(round(normalvariate(family_size, family_stdev))):
                 # create a child
                 child = Organism(male, female)
                 # increase total population
@@ -151,19 +151,6 @@ def test_run(
     # generation simulation loop
     for i in range(2, n_generations + 1):
 
-        # initialize current generation's statistics tracker
-        generation_stats = {
-            "gen": i,
-            "total_pop": 0,
-            "female": 0,
-            "male": 0,
-            "blue": 0,
-            "yellow": 0,
-            "BB": 0,
-            "Bb": 0,
-            "bb": 0,
-        }
-
         # once all children have been created, advance to the next generation
         current_generation, current_females, current_males = create_generation(
             current_generation,
@@ -177,9 +164,7 @@ def test_run(
 
         # print some stats on current generation while simulation is running
         print(
-            "Gen {}: {} male and {} female organisms".format(
-                i, len(current_males), len(current_females)
+            f"Gen {i} of {n_generations}: {len(current_males)} male and {len(current_females)} female organisms"
             )
-        )
         if len(current_generation) == 0:
             break

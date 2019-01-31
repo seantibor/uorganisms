@@ -81,7 +81,8 @@ def org_to_string(org):
 
 
 def get_org_hash(org):
-    return None if org is None else hash(','.join([str(org['creation_time']),
+    if org is not None:
+        return hash(','.join([str(org['creation_time']),
                                                    org['gender'],
                                                    org['color'],
                                                    str(org['parent1']),
@@ -156,7 +157,7 @@ while True:
         radio.send(msg)
 
     if state == 'RECV':
-        if msg is not None and msg[:4] == 'SREQ':
+        if msg is not None and msg[:4] == 'SREQ' and randint(1,3) == 1:
             new_org = org_from_repr(msg[5:])
             if new_org['gender'] != org['gender']:
                 print('Parent 1:')

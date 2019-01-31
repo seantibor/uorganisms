@@ -1,5 +1,6 @@
 from organisms import Organism
 from random import normalvariate, shuffle
+from tqdm import tqdm_notebook
 
 overall_stats = {}
 
@@ -140,16 +141,15 @@ def test_run(
 
     # show first generation statistics
     print(
-        "{} male and {} female organisms in first generation".format(
-            len(current_males), len(current_females)
-        )
+        f"{len(current_males)} male and {len(current_females)} female organisms in first generation"
     )
+    print(f"Simulating {n_generations-1} more generations..")
 
     # for organism in current_generation:
     #    print('The organism named {} is {} with {} color.'.format(organism.name, organism.traits['gender'], organism.traits['color']))
 
     # generation simulation loop
-    for i in range(2, n_generations + 1):
+    for i in tqdm_notebook(range(1, n_generations)):
 
         # once all children have been created, advance to the next generation
         current_generation, current_females, current_males = create_generation(
@@ -163,8 +163,9 @@ def test_run(
         )
 
         # print some stats on current generation while simulation is running
-        print(
+        '''print(
             f"Gen {i} of {n_generations}: {len(current_males)} male and {len(current_females)} female organisms"
             )
+        '''
         if len(current_generation) == 0:
             break

@@ -3,9 +3,9 @@ from os import listdir
 from random import choice, randint
 from time import ticks_ms, sleep
 import radio
-import gc
+from gc import collect
 
-maturity = randint(30, 60)  # time to reproduce in seconds
+maturity = randint(10, 30)  # time to reproduce in seconds
 last_reproduction = 0
 
 FILE = 'organism.txt'
@@ -14,7 +14,6 @@ state = "WAIT"
 
 def combine_traits(trait1, trait2):
     trait = [choice(trait1), choice(trait2)]
-
     return ''.join(sorted(trait))
 
 
@@ -115,7 +114,7 @@ if org is None:
 print_org(org)
 
 radio.on()
-radio.config(length=100)
+radio.config(length=40)
 while True:
     
     display.show(state[0], delay=100, wait=False)    
@@ -135,18 +134,12 @@ while True:
         print_org(org)
         write_string(org_to_string(org), FILE)
         
-    gc.collect()
+    collect()
 
     if ticks_ms() < last_reproduction + maturity * 1000:
         state = 'WAIT'
     elif state == 'WAIT':
         state = 'RECV'
-
-    if button_a.is_pressed() and button_b.is_pressed():
-        org = create_genesis_org()
-        write_string(org_to_string(org), FILE)
-        print_org(org)
-        sleep(1)
 
     elif button_a.was_pressed():
         display.scroll('G:{} C:{}'.format(org['gender'], org['color']))
@@ -174,7 +167,6 @@ while True:
 
             else:
                 display.show(Image.NO, wait=True, clear=True)
-                print('ignoring same-gender reproduction request')
     elif state == 'SEND':
         deadline = ticks_ms() + 500
         while ticks_ms() < deadline:
@@ -197,5 +189,3 @@ while True:
         if state == 'SEND':
             display.show(Image.NO, wait=True, clear=True)
             state = 'RECV'
-
-    print((gc.mem_free(),))

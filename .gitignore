@@ -4,3 +4,4 @@ __pycache__
 .vscode/settings.json
 env
 .vscode
+microbit/screenlog.0

@@ -24,4 +24,5 @@ while True:
             radio.send('UNLOCK')
     
     if button_b.was_pressed():
+        print('Reset Message Sent')
         radio.send('RESET')

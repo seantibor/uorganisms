@@ -8,22 +8,23 @@ import datetime
 import time
 import pygsheets
 from pathlib import Path
+from os import path
+import click
+import bullet
 
 default_port = '/dev/tty.usbmodem14102'
 default_baud = 115200
+client = pygsheets.authorize()
+
+organisms = {}
 
 csv_headers = ["Command", "Organism hash", "Gender Trait", "Color Trait", "Parent 1", "Parent 2", "Sender Time", "Generation Number", "System Timestamp"]
+sheet_headers = csv_headers[1:]
 
-log_file = None
+file_date = datetime.datetime.now()
+file_path = Path(f"organism_log_{file_date.isoformat()}.csv")
 
-def get_output_csv(file_prefix:str='uorganism_log', file_suffix:str='csv'):
-    file_date = datetime.now()
-    file_path = Path(f"{file_prefix}_{file_date.isoformat()}_.{file_suffix}")
-
-    with open(file_path, 'w') as output_file:
-        output_file.write(','.join(csv_headers))
-        yield output_file
-
+google_worksheet = None
 
 def get_serial(port:str=default_port, baud:int=default_baud) -> serial.Serial:
     ''' Opens a new serial connection
@@ -38,7 +39,7 @@ def get_serial(port:str=default_port, baud:int=default_baud) -> serial.Serial:
 
 def read_message(msg):
     if '|' not in msg:
-        print('msg')
+        print(msg)
         return
 
     command, payload = msg.split('|')
@@ -55,41 +56,82 @@ def log_to_gsheets(organism, sheet):
     '''
         Logs a single organism to the specified Google Worksheet
     '''
-    pass
+    organism_values = organism.split(',')
+    timestamp = datetime.datetime.utcnow()
+    organism_values.append(timestamp.strftime('%m/%d/%Y %H:%M:%S'))
+    sheet.append_table(organism_values)
 
-def log_to_file(organism, file):
-    '''
-        Logs a single organism to the specified csv file
-    '''
-    pass
+def log_to_file(organism):
+
+    # add the current UTC time as an ISO string
+    timestamp = datetime.datetime.utcnow()
+    timestamp = timestamp.isoformat()
+    organism = organism.split(',')
+    if len(organism) < len(csv_headers):
+        organism.append(timestamp)
+    org_string = ','.join(organism)
+    # append the string to the file.
+    if not path.exists(file_path):
+        with open(file_path, 'w') as log_file:
+            log_file.write(','.join(csv_headers))
+            log_file.write('\n')
+
+    with open(file_path, 'a') as log_file:
+        log_file.write(org_string)
+        log_file.write('\n')
 
 def get_organism_sheet(sheet_name:str, wks_name:str) -> pygsheets.Worksheet:
     '''
         Gets a Google Sheet and returns a single worksheet by name.
         If the spreadsheet or worksheet do not exist, it will create them.
     '''
-    pass
+    try:
+        sh = client.open(sheet_name)
+    except pygsheets.SpreadsheetNotFound:
+        sh = client.create(sheet_name)
+    
+    try:
+        wks = sh.worksheet_by_title(wks_name)
+    except pygsheets.WorksheetNotFound:
+        wks = sh.add_worksheet(wks_name)
+        wks.insert_rows(1, values=sheet_headers)
+    
+    return wks
     
 def handle_request(request):
     '''
     Handles a reproduction request. Will log request to file. Does not write to GSheets
     '''
     print('Request Received')
-    pass
+    log_to_file("Request," + request)
+    log_organism(request)
+
+def log_organism(organism):
+    organism_id = int(organism.split(',')[0])
+    if organism_id not in organisms:
+        organisms[organism_id] = organism
+        log_to_gsheets(organism, google_worksheet)
+        print(f"Logged organism {organism_id} to Google Sheets")
+    else:
+        print(f"Organism {organism_id} already known. Not logging.")
 
 def handle_response(response):
     print('Response Received')
-    pass
+    log_to_file("Response," + response)
+    log_organism(response)
 
 def handle_acknowledgement(ack):
     print('Acknowledgement Received')
-    pass
+    log_to_file("Acknowledgement," + ack)
+    log_organism(ack)
 
 def main():
-    global log_file
 
     s = get_serial()
-    log_file = get_output_csv()
+    global google_worksheet
+
+    if not google_worksheet:
+        google_worksheet = get_organism_sheet('Microorganisms Test', 'Test Run')
 
     while True:
         data = s.readline()

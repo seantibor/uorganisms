@@ -2,7 +2,10 @@
 .ipynb_checkpoints
 __pycache__
 .vscode/settings.json
-env
+.env
 .vscode
 microbit/screenlog.0
 .python-version
+organism_log*
+client_secret.json
+sheets.googleapis.com-python.json

@@ -5,3 +5,4 @@ __pycache__
 env
 .vscode
 microbit/screenlog.0
+.python-version

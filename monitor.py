@@ -12,7 +12,7 @@ from os import path
 import click
 import bullet
 
-default_port = '/dev/tty.usbmodem14102'
+default_port = '/dev/tty.usbmodem141402'
 default_baud = 115200
 client = pygsheets.authorize()
 
@@ -85,10 +85,7 @@ def get_organism_sheet(sheet_name:str, wks_name:str) -> pygsheets.Worksheet:
         Gets a Google Sheet and returns a single worksheet by name.
         If the spreadsheet or worksheet do not exist, it will create them.
     '''
-    try:
-        sh = client.open(sheet_name)
-    except pygsheets.SpreadsheetNotFound:
-        sh = client.create(sheet_name)
+    sh = get_spreadsheet(sheet_name)
     
     try:
         wks = sh.worksheet_by_title(wks_name)
@@ -97,7 +94,36 @@ def get_organism_sheet(sheet_name:str, wks_name:str) -> pygsheets.Worksheet:
         wks.insert_rows(1, values=sheet_headers)
     
     return wks
-    
+
+def get_spreadsheet(sheet_name=None):
+    gc = pygsheets.authorize()
+
+    try:
+        sh = gc.open(sheet_name)
+    except pygsheets.SpreadsheetNotFound:
+        if sheet_name:
+            query = f'name contains "{sheet_name.split()[0].lower()}"'
+        else:
+            query = ""
+        spreadsheets = gc.spreadsheet_titles(query=query)
+        while not spreadsheets:
+            if bullet.YesNo(prompt="Could not find spreadsheet. Do you want to create one?"):
+                return gc.create(sheet_name)
+            prompt = bullet.Input(
+                prompt="Here are the sheets we found: Enter your query: "
+            )
+            query = prompt.launch()
+            spreadsheets = gc.spreadsheet_titles(
+                query=f'name contains "{query.lower()}"'
+            )
+        prompt = bullet.Bullet(
+            choices=spreadsheets, prompt="Spreadsheet Names (Closest Match):"
+        )
+        sheet_name = prompt.launch()
+        sh = gc.open(sheet_name)
+
+    return sh
+
 def handle_request(request):
     '''
     Handles a reproduction request. Will log request to file. Does not write to GSheets
@@ -125,13 +151,18 @@ def handle_acknowledgement(ack):
     log_to_file("Acknowledgement," + ack)
     log_organism(ack)
 
-def main():
+@click.command()
+@click.option('-p', '--serial-port')
+@click.option('-b', '--baud-rate')
+@click.argument('sheet_name')
+@click.argument('worksheet')
+def main(serial_port, baud_rate, sheet_name, worksheet):
 
     s = get_serial()
     global google_worksheet
 
     if not google_worksheet:
-        google_worksheet = get_organism_sheet('Microorganisms Test', 'Test Run')
+        google_worksheet = get_organism_sheet(sheet_name, worksheet)
 
     while True:
         data = s.readline()

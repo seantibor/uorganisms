@@ -57,6 +57,7 @@ def log_to_gsheets(organism, sheet):
     timestamp = datetime.datetime.utcnow()
     organism_values.append(timestamp.strftime('%m/%d/%Y %H:%M:%S'))
     sheet.append_table(organism_values)
+        
 
 def log_to_file(organism):
 
@@ -133,7 +134,11 @@ def log_organism(organism):
     organism_id = int(organism.split(',')[0])
     if organism_id not in organisms:
         organisms[organism_id] = organism
-        log_to_gsheets(organism, google_worksheet)
+        try: 
+            log_to_gsheets(organism, google_worksheet)
+        except ConnectionResetError:
+            google_worksheet.client = pygsheets.authorize()
+            log_to_gsheets(organism, google_worksheet)
         print(f"Logged organism {organism_id} to Google Sheets")
     else:
         print(f"Organism {organism_id} already known. Not logging.")

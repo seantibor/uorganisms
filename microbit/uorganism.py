@@ -19,6 +19,8 @@ def combine_traits(trait1, trait2):
 
 def org_from_repr(repr_string):
     repr_list = repr_string.split(',')
+    if not repr_list[6].isnumeric():
+        repr_list[6] = 0
     org_dict = {
         'id': repr_list[0],
         'parent1': None if repr_list[3] == 'None' else int(repr_list[3]),
@@ -28,6 +30,7 @@ def org_from_repr(repr_string):
         'creation_time': int(repr_list[5]),
         'generation': int(repr_list[6])
     }
+
     return org_dict
 
 
@@ -56,6 +59,8 @@ def create_org_from_parents(parent1, parent2):
         'creation_time': ticks_ms(),
         'generation': max(parent1['generation'], parent2['generation']) + 1
     }
+    if not org['generation']:
+        org['generation'] = (parent1['generation'] or parent2['generation']) + 1
     return org_dict
 
 
@@ -73,14 +78,7 @@ def load_organism(filename):
 
 
 def org_to_string(org):
-    return ','.join([str(org['id']),
-                     org['gender'],
-                     org['color'],
-                     str(org['parent1']),
-                     str(org['parent2']),
-                     str(org['creation_time']),
-                     str(org['generation'])])
-
+    return ','.join([str(value) for value in org.values()])
 
 def get_org_id():
     return randint(10000,100000)

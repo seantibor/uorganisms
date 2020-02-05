@@ -1,4 +1,5 @@
 from microbit import *
+from utime import ticks_diff, ticks_ms
 import radio
 
 radio.on()
@@ -6,6 +7,8 @@ radio.config(length=100)
 print('radio on')
 
 state = 'UNLOCK'
+last_lock_ping = ticks_ms()
+ping_interval = 1000
 
 while True:
     msg = radio.receive()
@@ -22,6 +25,10 @@ while True:
         else:
             state = 'UNLOCK'
             radio.send('UNLOCK')
+
+    if ticks_diff(ticks_ms(), last_lock_ping) > ping_interval:
+        if state in ('LOCK'):
+            radio.send(state)
     
     if button_b.was_pressed():
         print('Reset Message Sent')

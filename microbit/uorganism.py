@@ -20,6 +20,7 @@ def combine_traits(trait1, trait2):
 def org_from_repr(repr_string):
     repr_list = repr_string.split(',')
     org_dict = {
+        'id': repr_list[0],
         'parent1': None if repr_list[3] == 'None' else int(repr_list[3]),
         'parent2': None if repr_list[4] == 'None' else int(repr_list[4]),
         'gender': repr_list[1],
@@ -32,6 +33,7 @@ def org_from_repr(repr_string):
 
 def create_genesis_org():
     org_dict = {
+        'id': get_org_id(),
         'parent1': None,
         'parent2': None,
         'gender': choice(('XX', 'XY')),
@@ -46,8 +48,9 @@ def create_org_from_parents(parent1, parent2):
     if parent1['gender'] == parent2['gender']:
         return False
     org_dict = {
-        'parent1': get_org_hash(parent1),
-        'parent2': get_org_hash(parent2),
+        'id': get_org_id(),
+        'parent1': parent1['id'],
+        'parent2': parent2['id'],
         'gender': combine_traits(parent1['gender'], parent2['gender']),
         'color': combine_traits(parent1['color'], parent2['color']),
         'creation_time': ticks_ms(),
@@ -70,7 +73,7 @@ def load_organism(filename):
 
 
 def org_to_string(org):
-    return ','.join([str(get_org_hash(org)),
+    return ','.join([str(org['id']),
                      org['gender'],
                      org['color'],
                      str(org['parent1']),
@@ -79,15 +82,8 @@ def org_to_string(org):
                      str(org['generation'])])
 
 
-def get_org_hash(org):
-    if org is not None:
-        return hash(','.join([str(org['creation_time']),
-                                                   org['gender'],
-                                                   org['color'],
-                                                   str(org['parent1']),
-                                                   str(org['parent2']),
-                                                   str(org['generation'])
-                                                   ]))
+def get_org_id():
+    return randint(10000,100000)
 
 
 def print_org(org):
@@ -97,7 +93,7 @@ def print_org(org):
           P2: {}
           Gender: {}
           Color: {}
-          Time: {}'''.format(get_org_hash(org),
+          Time: {}'''.format(org['id'],
                              org['generation'],
                              org['parent1'],
                              org['parent2'],

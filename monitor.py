@@ -43,12 +43,9 @@ def read_message(msg):
         return
 
     command, payload = msg.split('|')
-    if command == 'SREQ':
-        handle_request(payload)
-    elif command == 'SRSP':
-        handle_response(payload)
-    elif command == 'SACK':
-        handle_acknowledgement(payload)
+    if command in ('SREQ','SRSP','SACK'):
+        log_organism(payload)
+        log_to_file(msg.replace('|', ','))
     else:
         print(f'Encountered unknown command: {command}')
 
@@ -91,7 +88,7 @@ def get_organism_sheet(sheet_name:str, wks_name:str) -> pygsheets.Worksheet:
         wks = sh.worksheet_by_title(wks_name)
     except pygsheets.WorksheetNotFound:
         wks = sh.add_worksheet(wks_name)
-        wks.insert_rows(1, values=sheet_headers)
+        wks.insert_rows(0, values=sheet_headers)
     
     return wks
 
@@ -152,17 +149,21 @@ def handle_acknowledgement(ack):
     log_organism(ack)
 
 @click.command()
-@click.option('-p', '--serial-port')
-@click.option('-b', '--baud-rate')
+@click.option('-p', '--serial-port', default=default_port)
+@click.option('-b', '--baud-rate', default=default_baud)
 @click.argument('sheet_name')
 @click.argument('worksheet')
-def main(serial_port, baud_rate, sheet_name, worksheet):
+def main(sheet_name, worksheet, serial_port, baud_rate):
 
-    s = get_serial()
+    print(f'attempting to open {serial_port} at {baud_rate}')
+    s = get_serial(port=serial_port, baud=baud_rate)
+    print(f'Serial port {serial_port} opened')
     global google_worksheet
 
+    print(f'attempting to open google spreadsheet {sheet_name} with worksheet {worksheet}')
     if not google_worksheet:
         google_worksheet = get_organism_sheet(sheet_name, worksheet)
+    print(f'google spreadsheet {sheet_name} with worksheet {worksheet} opened')
 
     while True:
         data = s.readline()

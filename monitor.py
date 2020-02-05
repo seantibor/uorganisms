@@ -12,6 +12,13 @@ from os import path
 import click
 import bullet
 
+import asyncio
+import aioserial
+import queue
+import concurrent.futures
+
+q: queue.Queue = queue.Queue(1000)
+
 default_port = '/dev/tty.usbmodem141402'
 default_baud = 115200
 client = pygsheets.authorize()
@@ -26,15 +33,13 @@ file_path = Path(f"organism_log_{file_date.isoformat()}.csv")
 
 google_worksheet = None
 
-def get_serial(port:str=default_port, baud:int=default_baud) -> serial.Serial:
+def get_serial(port:str=default_port, baud:int=default_baud) -> aioserial.AioSerial:
     ''' Opens a new serial connection
     params:
         port - the logical port on your computer for the microbit
         baud - the serial baud rate of the connect, defaults to 115200
     '''
-    port = Path(port)
-    s = serial.Serial(str(port))
-    s.baudrate = baud
+    s: aioserial.AioSerial = aioserial.AioSerial(port=port, baudrate=baud)
     return s
 
 def read_message(msg):
@@ -153,6 +158,23 @@ def handle_acknowledgement(ack):
     log_to_file("Acknowledgement," + ack)
     log_organism(ack)
 
+async def readline_and_put_to_queue(
+        aioserial_instance: aioserial.AioSerial,
+        q: queue.Queue):
+    while True:
+        q.put(await aioserial_instance.readline_async())
+
+async def process_queue(q: queue.Queue):
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+        while True:
+            line: bytes = await asyncio.get_running_loop().run_in_executor(
+                    executor, q.get)
+            line = line.decode('utf-8')
+            line = line.strip()
+            print(line)
+            read_message(line)
+            q.task_done()
+
 @click.command()
 @click.option('-p', '--serial-port', default=default_port)
 @click.option('-b', '--baud-rate', default=default_baud)
@@ -170,12 +192,10 @@ def main(sheet_name, worksheet, serial_port, baud_rate):
         google_worksheet = get_organism_sheet(sheet_name, worksheet)
     print(f'google spreadsheet {sheet_name} with worksheet {worksheet} opened')
 
-    while True:
-        data = s.readline()
-        data = data.decode('utf-8')
-        data = data.strip()
-        read_message(data)
-        print(data)
+    asyncio.run(asyncio.wait([
+        readline_and_put_to_queue(s, q),
+        process_queue(q),
+    ]))
 
 if __name__ == '__main__':
     main()

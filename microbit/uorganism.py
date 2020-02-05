@@ -59,8 +59,8 @@ def create_org_from_parents(parent1, parent2):
         'creation_time': ticks_ms(),
         'generation': max(parent1['generation'], parent2['generation']) + 1
     }
-    if not org['generation']:
-        org['generation'] = (parent1['generation'] or parent2['generation']) + 1
+    if org_dict['generation'] is None:
+        org_dict['generation'] = 0
     return org_dict
 
 

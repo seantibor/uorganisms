@@ -5,7 +5,7 @@ The uorganism, spoken: 'micro:organism' (get it?), project helps students unders
 
 ## Features:
 * Persistent storage of organisms between resets and power failures
-* Includes [lesson worksheet](Graphing Pedigree with the Microbit 2019.pdf) for students to track pedigrees across generations
+* Includes [lesson worksheet](Graphing%20Pedigree%20with%20the%20Microbit%202019.pdf) for students to track pedigrees across generations
 * Reproduction events between micro:bits using the built-in radio
 * REPL output of reproduction events, including parent information
 * [Teacher micro:bit device code](microbit/teacher_mode.py) that has:
